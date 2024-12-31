@@ -49,7 +49,19 @@ RCT_EXPORT_METHOD(createKeys: (NSDictionary *)params resolver:(RCTPromiseResolve
   dispatch_async(dispatch_get_global_queue( DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
     CFErrorRef error = NULL;
     BOOL allowDeviceCredentials = [RCTConvert BOOL:params[@"allowDeviceCredentials"]];
-
+    NSString *keytag = [RCTConvert NSString:params[@"keytag"]];
+    NSNumber *keytype = [RCTConvert NSNumber:params[@"keytype"]];
+      int type = [keytype intValue];
+    NSNumber *keysize = [RCTConvert NSNumber:params[@"keysize"]];
+      NSNumber *size = @2048;
+      if(type != 0){
+          reject(@"storage_error", @"Chỉ hỗ trợ genkey rsa (keytype = 0)", nil);
+          return;
+      }
+      if([keysize intValue] > 0){
+          size = keysize;
+      }
+      
     SecAccessControlCreateFlags secCreateFlag = kSecAccessControlBiometryAny;
 
     if (allowDeviceCredentials == TRUE) {
@@ -65,11 +77,11 @@ RCT_EXPORT_METHOD(createKeys: (NSDictionary *)params resolver:(RCTPromiseResolve
       return;
     }
 
-    NSData *biometricKeyTag = [self getBiometricKeyTag];
+      NSData *biometricKeyTag = [self getBiometricKeyTag:keytag];
     NSDictionary *keyAttributes = @{
                                     (id)kSecClass: (id)kSecClassKey,
                                     (id)kSecAttrKeyType: (id)kSecAttrKeyTypeRSA,
-                                    (id)kSecAttrKeySizeInBits: @2048,
+                                    (id)kSecAttrKeySizeInBits: size,
                                     (id)kSecPrivateKeyAttrs: @{
                                         (id)kSecAttrIsPermanent: @YES,
                                         (id)kSecUseAuthenticationUI: (id)kSecUseAuthenticationUIAllow,
@@ -78,7 +90,7 @@ RCT_EXPORT_METHOD(createKeys: (NSDictionary *)params resolver:(RCTPromiseResolve
                                         }
                                     };
 
-    [self deleteBiometricKey];
+      [self deleteBiometricKey:keytag];
     NSError *gen_error = nil;
     id privateKey = CFBridgingRelease(SecKeyCreateRandomKey((__bridge CFDictionaryRef)keyAttributes, (void *)&gen_error));
 
@@ -100,12 +112,12 @@ RCT_EXPORT_METHOD(createKeys: (NSDictionary *)params resolver:(RCTPromiseResolve
   });
 }
 
-RCT_EXPORT_METHOD(deleteKeys: (RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject) {
+RCT_EXPORT_METHOD(deleteKeys:(NSString *)keytag resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject) {
   dispatch_async(dispatch_get_global_queue( DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-    BOOL biometricKeyExists = [self doesBiometricKeyExist];
+      BOOL biometricKeyExists = [self doesBiometricKeyExist:keytag];
 
     if (biometricKeyExists) {
-      OSStatus status = [self deleteBiometricKey];
+        OSStatus status = [self deleteBiometricKey:keytag];
 
       if (status == noErr) {
         NSDictionary *result = @{
@@ -129,8 +141,10 @@ RCT_EXPORT_METHOD(createSignature: (NSDictionary *)params resolver:(RCTPromiseRe
   dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
     NSString *promptMessage = [RCTConvert NSString:params[@"promptMessage"]];
     NSString *payload = [RCTConvert NSString:params[@"payload"]];
+    NSString *keytag = [RCTConvert NSString:params[@"keytag"]];
+    NSNumber *type = [RCTConvert NSNumber:params[@"type"]];
 
-    NSData *biometricKeyTag = [self getBiometricKeyTag];
+      NSData *biometricKeyTag = [self getBiometricKeyTag:keytag];
     NSDictionary *query = @{
                             (id)kSecClass: (id)kSecClassKey,
                             (id)kSecAttrApplicationTag: biometricKeyTag,
@@ -143,8 +157,10 @@ RCT_EXPORT_METHOD(createSignature: (NSDictionary *)params resolver:(RCTPromiseRe
 
     if (status == errSecSuccess) {
       NSError *error;
-      // NSData *dataToSign = [payload dataUsingEncoding:NSUTF8StringEncoding];
-      NSData *dataToSign = [[NSData alloc] initWithBase64EncodedString:payload options:0];
+      NSData *dataToSign = [payload dataUsingEncoding:NSUTF8StringEncoding];
+        if([type intValue] == 1){
+            dataToSign = [[NSData alloc] initWithBase64EncodedString:payload options:0];
+        }
       NSData *signature = CFBridgingRelease(SecKeyCreateSignature(privateKey, kSecKeyAlgorithmRSASignatureMessagePKCS1v15SHA256, (CFDataRef)dataToSign, (void *)&error));
 
       if (signature != nil) {
@@ -207,9 +223,9 @@ RCT_EXPORT_METHOD(simplePrompt: (NSDictionary *)params resolver:(RCTPromiseResol
   });
 }
 
-RCT_EXPORT_METHOD(biometricKeysExist: (RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject) {
+RCT_EXPORT_METHOD(biometricKeysExist:(NSString *)keytag resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject) {
   dispatch_async(dispatch_get_global_queue( DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-    BOOL biometricKeyExists = [self doesBiometricKeyExist];
+      BOOL biometricKeyExists = [self doesBiometricKeyExist:keytag];
 
     if (biometricKeyExists) {
       NSDictionary *result = @{
@@ -225,14 +241,17 @@ RCT_EXPORT_METHOD(biometricKeysExist: (RCTPromiseResolveBlock)resolve rejecter:(
   });
 }
 
-- (NSData *) getBiometricKeyTag {
+- (NSData *) getBiometricKeyTag:(NSString *)keytag {
   NSString *biometricKeyAlias = @"com.rnbiometrics.biometricKey";
+    if(keytag != nil && ![keytag  isEqual: @""]){
+        biometricKeyAlias = keytag;
+    }
   NSData *biometricKeyTag = [biometricKeyAlias dataUsingEncoding:NSUTF8StringEncoding];
   return biometricKeyTag;
 }
 
-- (BOOL) doesBiometricKeyExist {
-  NSData *biometricKeyTag = [self getBiometricKeyTag];
+- (BOOL) doesBiometricKeyExist:(NSString *)keytag {
+    NSData *biometricKeyTag = [self getBiometricKeyTag:keytag];
   NSDictionary *searchQuery = @{
                                 (id)kSecClass: (id)kSecClassKey,
                                 (id)kSecAttrApplicationTag: biometricKeyTag,
@@ -244,8 +263,8 @@ RCT_EXPORT_METHOD(biometricKeysExist: (RCTPromiseResolveBlock)resolve rejecter:(
   return status == errSecSuccess || status == errSecInteractionNotAllowed;
 }
 
--(OSStatus) deleteBiometricKey {
-  NSData *biometricKeyTag = [self getBiometricKeyTag];
+-(OSStatus) deleteBiometricKey:(NSString *)keytag {
+    NSData *biometricKeyTag = [self getBiometricKeyTag:keytag];
   NSDictionary *deleteQuery = @{
                                 (id)kSecClass: (id)kSecClassKey,
                                 (id)kSecAttrApplicationTag: biometricKeyTag,

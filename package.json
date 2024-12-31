@@ -1,6 +1,6 @@
 {
   "name": "react-native-biometrics-sign",
-  "version": "0.0.6",
+  "version": "0.2.1",
   "summary": "A React Native library for biometrics",
   "description": "React Native biometric functionality for signing and encryption",
   "main": "build/cjs/index.js",
@@ -24,14 +24,14 @@
     "touch-id",
     "face-id"
   ],
-  "homepage": "https://github.com/SelfLender/react-native-biometrics",
+  "homepage": "https://github.com/tailgbga2/react-native-biometrics-sign",
   "contributors": [],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/SelfLender/react-native-biometrics.git"
+    "url": "git+https://github.com/tailgbga2/react-native-biometrics-sign.git"
   },
   "private": false,
-  "author": "Brandon Hines (https://github.com/NappyPirate)",
+  "author": "Ngô Tuấn Tài <taideveloperapp@gmail.com> (https://github.com/taingo97)",
   "authorname": "react-native-biometrics",
   "license": "MIT",
   "peerDependencies": {

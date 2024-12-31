@@ -1,7 +1,7 @@
 /**
  * Type alias for possible biometry types
  */
-export declare type BiometryType = 'TouchID' | 'FaceID' | 'Biometrics';
+export type BiometryType = 'TouchID' | 'FaceID' | 'Biometrics';
 interface RNBiometricsOptions {
     allowDeviceCredentials?: boolean;
 }
@@ -19,9 +19,16 @@ interface BiometricKeysExistResult {
 interface DeleteKeysResult {
     keysDeleted: boolean;
 }
+interface CreateKeysOptions {
+    keytag: string;
+    keytype: number;
+    keysize?: number;
+}
 interface CreateSignatureOptions {
     promptMessage: string;
     payload: string;
+    keytag: string;
+    type: number;
     cancelButtonText?: string;
 }
 interface CreateSignatureResult {
@@ -55,7 +62,7 @@ export declare const BiometryTypes: {
     FaceID: string;
     Biometrics: string;
 };
-export declare module ReactNativeBiometricsLegacy {
+export declare namespace ReactNativeBiometricsLegacy {
     /**
      * Returns promise that resolves to an object with object.biometryType = Biometrics | TouchID | FaceID
      * @returns {Promise<Object>} Promise that resolves to an object with details about biometrics available
@@ -66,19 +73,19 @@ export declare module ReactNativeBiometricsLegacy {
      * an object with object.publicKey, which is the public key of the newly generated key pair
      * @returns {Promise<Object>}  Promise that resolves to object with details about the newly generated public key
      */
-    function createKeys(): Promise<CreateKeysResult>;
+    function createKeys(CreateKeysOptions: CreateKeysOptions): Promise<CreateKeysResult>;
     /**
      * Returns promise that resolves to an object with object.keysExists = true | false
      * indicating if the keys were found to exist or not
      * @returns {Promise<Object>} Promise that resolves to object with details aobut the existence of keys
      */
-    function biometricKeysExist(): Promise<BiometricKeysExistResult>;
+    function biometricKeysExist(keytag: string): Promise<BiometricKeysExistResult>;
     /**
      * Returns promise that resolves to an object with true | false
      * indicating if the keys were properly deleted
      * @returns {Promise<Object>} Promise that resolves to an object with details about the deletion
      */
-    function deleteKeys(): Promise<DeleteKeysResult>;
+    function deleteKeys(keytag: string): Promise<DeleteKeysResult>;
     /**
      * Prompts user with biometrics dialog using the passed in prompt message and
      * returns promise that resolves to an object with object.signature,
@@ -86,6 +93,8 @@ export declare module ReactNativeBiometricsLegacy {
      * @param {Object} createSignatureOptions
      * @param {string} createSignatureOptions.promptMessage
      * @param {string} createSignatureOptions.payload
+     * @param {string} createSignatureOptions.keytag
+     * @param {string} createSignatureOptions.type
      * @returns {Promise<Object>}  Promise that resolves to an object cryptographic signature details
      */
     function createSignature(createSignatureOptions: CreateSignatureOptions): Promise<CreateSignatureResult>;
@@ -117,19 +126,19 @@ export default class ReactNativeBiometrics {
      * an object with object.publicKey, which is the public key of the newly generated key pair
      * @returns {Promise<Object>}  Promise that resolves to object with details about the newly generated public key
      */
-    createKeys(): Promise<CreateKeysResult>;
+    createKeys(CreateKeysOptions: CreateKeysOptions): Promise<CreateKeysResult>;
     /**
      * Returns promise that resolves to an object with object.keysExists = true | false
      * indicating if the keys were found to exist or not
      * @returns {Promise<Object>} Promise that resolves to object with details aobut the existence of keys
      */
-    biometricKeysExist(): Promise<BiometricKeysExistResult>;
+    biometricKeysExist(keytag: string): Promise<BiometricKeysExistResult>;
     /**
      * Returns promise that resolves to an object with true | false
      * indicating if the keys were properly deleted
      * @returns {Promise<Object>} Promise that resolves to an object with details about the deletion
      */
-    deleteKeys(): Promise<DeleteKeysResult>;
+    deleteKeys(keytag: string): Promise<DeleteKeysResult>;
     /**
      * Prompts user with biometrics dialog using the passed in prompt message and
      * returns promise that resolves to an object with object.signature,
@@ -137,6 +146,8 @@ export default class ReactNativeBiometrics {
      * @param {Object} createSignatureOptions
      * @param {string} createSignatureOptions.promptMessage
      * @param {string} createSignatureOptions.payload
+     * @param {string} createSignatureOptions.keytag
+     * @param {string} createSignatureOptions.type
      * @returns {Promise<Object>}  Promise that resolves to an object cryptographic signature details
      */
     createSignature(createSignatureOptions: CreateSignatureOptions): Promise<CreateSignatureResult>;

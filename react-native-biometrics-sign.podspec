@@ -7,6 +7,7 @@ Pod::Spec.new do |s|
   s.version        = package['version']
   s.summary        = package['summary']
   s.description    = package['description']
+  s.author         = package['author']
   s.license        = package['license']
   s.homepage       = package['homepage']
   s.source         = { :git => 'https://github.com/SelfLender/react-native-biometrics.git', :tag => "#{s.version}" }

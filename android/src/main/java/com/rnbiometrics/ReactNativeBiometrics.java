@@ -90,29 +90,75 @@ public class ReactNativeBiometrics extends ReactContextBaseJavaModule {
         }
     }
 
+    // @ReactMethod
+    // public void createKeys(final ReadableMap params, Promise promise) {
+    //     try {
+    //         if (isCurrentSDKMarshmallowOrLater()) {
+    //             deleteBiometricKey();
+    //             KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(KeyProperties.KEY_ALGORITHM_RSA, "AndroidKeyStore");
+    //             KeyGenParameterSpec keyGenParameterSpec = new KeyGenParameterSpec.Builder(biometricKeyAlias, KeyProperties.PURPOSE_SIGN)
+    //                     .setDigests(KeyProperties.DIGEST_SHA256)
+    //                     .setSignaturePaddings(KeyProperties.SIGNATURE_PADDING_RSA_PKCS1)
+    //                     .setAlgorithmParameterSpec(new RSAKeyGenParameterSpec(2048, RSAKeyGenParameterSpec.F4))
+    //                     .setUserAuthenticationRequired(true)
+    //                     .build();
+    //             keyPairGenerator.initialize(keyGenParameterSpec);
+
+    //             KeyPair keyPair = keyPairGenerator.generateKeyPair();
+    //             PublicKey publicKey = keyPair.getPublic();
+    //             byte[] encodedPublicKey = publicKey.getEncoded();
+    //             String publicKeyString = Base64.encodeToString(encodedPublicKey, Base64.DEFAULT);
+    //             publicKeyString = publicKeyString.replaceAll("\r", "").replaceAll("\n", "");
+
+    //             WritableMap resultMap = new WritableNativeMap();
+    //             resultMap.putString("publicKey", publicKeyString);
+    //             promise.resolve(resultMap);
+    //         } else {
+    //             promise.reject("Cannot generate keys on android versions below 6.0", "Cannot generate keys on android versions below 6.0");
+    //         }
+    //     } catch (Exception e) {
+    //         promise.reject("Error generating public private keys: " + e.getMessage(), "Error generating public private keys");
+    //     }
+    // }
+
     @ReactMethod
     public void createKeys(final ReadableMap params, Promise promise) {
         try {
             if (isCurrentSDKMarshmallowOrLater()) {
-                deleteBiometricKey();
-                KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(KeyProperties.KEY_ALGORITHM_RSA, "AndroidKeyStore");
-                KeyGenParameterSpec keyGenParameterSpec = new KeyGenParameterSpec.Builder(biometricKeyAlias, KeyProperties.PURPOSE_SIGN)
-                        .setDigests(KeyProperties.DIGEST_SHA256)
-                        .setSignaturePaddings(KeyProperties.SIGNATURE_PADDING_RSA_PKCS1)
-                        .setAlgorithmParameterSpec(new RSAKeyGenParameterSpec(2048, RSAKeyGenParameterSpec.F4))
-                        .setUserAuthenticationRequired(true)
-                        .build();
-                keyPairGenerator.initialize(keyGenParameterSpec);
+                String keytag = params.getString("keytag");
+                int keytype = params.getInt("keytype");
+                if(keytype == 0){
+                    int keysize = 2048;
+                    if(keytag.isEmpty()){
+                        promise.reject("keytag is empty", "keytag is empty");
+                    }else{
+                        deleteBiometricKeyByKeytag(keytag);
+                        int size = params.getInt("keysize");
+                        if(size > 0){
+                            keysize = size;
+                        }
+                        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(KeyProperties.KEY_ALGORITHM_RSA, "AndroidKeyStore");
+                        KeyGenParameterSpec keyGenParameterSpec = new KeyGenParameterSpec.Builder(keytag, KeyProperties.PURPOSE_SIGN)
+                                .setDigests(KeyProperties.DIGEST_SHA256)
+                                .setSignaturePaddings(KeyProperties.SIGNATURE_PADDING_RSA_PKCS1)
+                                .setAlgorithmParameterSpec(new RSAKeyGenParameterSpec(keysize, RSAKeyGenParameterSpec.F4))
+                                .setUserAuthenticationRequired(true)
+                                .build();
+                        keyPairGenerator.initialize(keyGenParameterSpec);
 
-                KeyPair keyPair = keyPairGenerator.generateKeyPair();
-                PublicKey publicKey = keyPair.getPublic();
-                byte[] encodedPublicKey = publicKey.getEncoded();
-                String publicKeyString = Base64.encodeToString(encodedPublicKey, Base64.DEFAULT);
-                publicKeyString = publicKeyString.replaceAll("\r", "").replaceAll("\n", "");
+                        KeyPair keyPair = keyPairGenerator.generateKeyPair();
+                        PublicKey publicKey = keyPair.getPublic();
+                        byte[] encodedPublicKey = publicKey.getEncoded();
+                        String publicKeyString = Base64.encodeToString(encodedPublicKey, Base64.DEFAULT);
+                        publicKeyString = publicKeyString.replaceAll("\r", "").replaceAll("\n", "");
 
-                WritableMap resultMap = new WritableNativeMap();
-                resultMap.putString("publicKey", publicKeyString);
-                promise.resolve(resultMap);
+                        WritableMap resultMap = new WritableNativeMap();
+                        resultMap.putString("publicKey", publicKeyString);
+                        promise.resolve(resultMap);
+                    }
+                }else{
+                    promise.reject("Chỉ hỗ trợ genkey rsa (keytype = 0)", "Chỉ hỗ trợ genkey rsa (keytype = 0)");
+                }
             } else {
                 promise.reject("Cannot generate keys on android versions below 6.0", "Cannot generate keys on android versions below 6.0");
             }
@@ -126,21 +172,25 @@ public class ReactNativeBiometrics extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void deleteKeys(Promise promise) {
-        if (doesBiometricKeyExist()) {
-            boolean deletionSuccessful = deleteBiometricKey();
+    public void deleteKeys(final String keytag, Promise promise) {
+        if(keytag.isEmpty()){
+            promise.reject("keytag is empty", "keytag is empty");
+        }else{
+            if (doesBiometricKeyExist(keytag)) {
+                boolean deletionSuccessful = deleteBiometricKeyByKeytag(keytag);
 
-            if (deletionSuccessful) {
-                WritableMap resultMap = new WritableNativeMap();
-                resultMap.putBoolean("keysDeleted", true);
-                promise.resolve(resultMap);
+                if (deletionSuccessful) {
+                    WritableMap resultMap = new WritableNativeMap();
+                    resultMap.putBoolean("keysDeleted", true);
+                    promise.resolve(resultMap);
+                } else {
+                    promise.reject("Error deleting biometric key from keystore", "Error deleting biometric key from keystore");
+                }
             } else {
-                promise.reject("Error deleting biometric key from keystore", "Error deleting biometric key from keystore");
+                WritableMap resultMap = new WritableNativeMap();
+                resultMap.putBoolean("keysDeleted", false);
+                promise.resolve(resultMap);
             }
-        } else {
-            WritableMap resultMap = new WritableNativeMap();
-            resultMap.putBoolean("keysDeleted", false);
-            promise.resolve(resultMap);
         }
     }
 
@@ -154,24 +204,34 @@ public class ReactNativeBiometrics extends ReactContextBaseJavaModule {
                             try {
                                 String promptMessage = params.getString("promptMessage");
                                 String payload = params.getString("payload");
-                                String cancelButtonText = params.getString("cancelButtonText");
-                                boolean allowDeviceCredentials = params.getBoolean("allowDeviceCredentials");
+                                String keytag = params.getString("keytag");
+                                int type = params.getInt("type");
+                                if(keytag.isEmpty()){
+                                    promise.reject("keytag is empty","keytag is empty");
+                                }else{
+                                    String loai = "string";
+                                    if(type == 1){
+                                        loai = "base64";
+                                    }
+                                    String cancelButtonText = params.getString("cancelButtonText");
+                                    boolean allowDeviceCredentials = params.getBoolean("allowDeviceCredentials");
 
-                                Signature signature = Signature.getInstance("SHA256withRSA");
-                                KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
-                                keyStore.load(null);
+                                    Signature signature = Signature.getInstance("SHA256withRSA");
+                                    KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
+                                    keyStore.load(null);
 
-                                PrivateKey privateKey = (PrivateKey) keyStore.getKey(biometricKeyAlias, null);
-                                signature.initSign(privateKey);
+                                    PrivateKey privateKey = (PrivateKey) keyStore.getKey(keytag, null);
+                                    signature.initSign(privateKey);
 
-                                BiometricPrompt.CryptoObject cryptoObject = new BiometricPrompt.CryptoObject(signature);
+                                    BiometricPrompt.CryptoObject cryptoObject = new BiometricPrompt.CryptoObject(signature);
 
-                                AuthenticationCallback authCallback = new CreateSignatureCallback(promise, payload);
-                                FragmentActivity fragmentActivity = (FragmentActivity) getCurrentActivity();
-                                Executor executor = Executors.newSingleThreadExecutor();
-                                BiometricPrompt biometricPrompt = new BiometricPrompt(fragmentActivity, executor, authCallback);
+                                    AuthenticationCallback authCallback = new CreateSignatureCallback(promise, payload, loai);
+                                    FragmentActivity fragmentActivity = (FragmentActivity) getCurrentActivity();
+                                    Executor executor = Executors.newSingleThreadExecutor();
+                                    BiometricPrompt biometricPrompt = new BiometricPrompt(fragmentActivity, executor, authCallback);
 
-                                biometricPrompt.authenticate(getPromptInfo(promptMessage, cancelButtonText, allowDeviceCredentials), cryptoObject);
+                                    biometricPrompt.authenticate(getPromptInfo(promptMessage, cancelButtonText, allowDeviceCredentials), cryptoObject);
+                                }
                             } catch (Exception e) {
                                 promise.reject("Error signing payload: " + e.getMessage(), "Error generating signature: " + e.getMessage());
                             }
@@ -234,23 +294,27 @@ public class ReactNativeBiometrics extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void biometricKeysExist(Promise promise) {
-        try {
-            boolean doesBiometricKeyExist = doesBiometricKeyExist();
-            WritableMap resultMap = new WritableNativeMap();
-            resultMap.putBoolean("keysExist", doesBiometricKeyExist);
-            promise.resolve(resultMap);
-        } catch (Exception e) {
-            promise.reject("Error checking if biometric key exists: " + e.getMessage(), "Error checking if biometric key exists: " + e.getMessage());
+    public void biometricKeysExist(final String keytag, Promise promise) {
+        if(keytag.isEmpty()){
+            promise.reject("keytag is empty", "keytag is empty");
+        }else{
+            try {
+                boolean doesBiometricKeyExist = doesBiometricKeyExist(keytag);
+                WritableMap resultMap = new WritableNativeMap();
+                resultMap.putBoolean("keysExist", doesBiometricKeyExist);
+                promise.resolve(resultMap);
+            } catch (Exception e) {
+                promise.reject("Error checking if biometric key exists: " + e.getMessage(), "Error checking if biometric key exists: " + e.getMessage());
+            }
         }
     }
 
-    protected boolean doesBiometricKeyExist() {
+    protected boolean doesBiometricKeyExist(String keytag) {
         try {
             KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
             keyStore.load(null);
 
-            return keyStore.containsAlias(biometricKeyAlias);
+            return keyStore.containsAlias(keytag);
         } catch (Exception e) {
             return false;
         }
@@ -262,6 +326,18 @@ public class ReactNativeBiometrics extends ReactContextBaseJavaModule {
             keyStore.load(null);
 
             keyStore.deleteEntry(biometricKeyAlias);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    protected boolean deleteBiometricKeyByKeytag(String key) {
+        try {
+            KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
+            keyStore.load(null);
+
+            keyStore.deleteEntry(key);
             return true;
         } catch (Exception e) {
             return false;

@@ -29,9 +29,17 @@ interface DeleteKeysResult {
   keysDeleted: boolean
 }
 
+interface CreateKeysOptions {
+  keytag: string
+  keytype: number
+  keysize?: number
+}
+
 interface CreateSignatureOptions {
   promptMessage: string
   payload: string
+  keytag: string
+  type: number
   cancelButtonText?: string
 }
 
@@ -85,8 +93,8 @@ export module ReactNativeBiometricsLegacy {
    * an object with object.publicKey, which is the public key of the newly generated key pair
    * @returns {Promise<Object>}  Promise that resolves to object with details about the newly generated public key
    */
-  export function createKeys(): Promise<CreateKeysResult> {
-    return new ReactNativeBiometrics().createKeys()
+  export function createKeys(CreateKeysOptions: CreateKeysOptions): Promise<CreateKeysResult> {
+    return new ReactNativeBiometrics().createKeys(CreateKeysOptions)
   }
 
   /**
@@ -94,8 +102,8 @@ export module ReactNativeBiometricsLegacy {
    * indicating if the keys were found to exist or not
    * @returns {Promise<Object>} Promise that resolves to object with details aobut the existence of keys
    */
-  export function biometricKeysExist(): Promise<BiometricKeysExistResult> {
-    return new ReactNativeBiometrics().biometricKeysExist()
+  export function biometricKeysExist(keytag: string): Promise<BiometricKeysExistResult> {
+    return new ReactNativeBiometrics().biometricKeysExist(keytag)
   }
 
   /**
@@ -103,8 +111,8 @@ export module ReactNativeBiometricsLegacy {
    * indicating if the keys were properly deleted
    * @returns {Promise<Object>} Promise that resolves to an object with details about the deletion
    */
-  export function deleteKeys(): Promise<DeleteKeysResult> {
-    return new ReactNativeBiometrics().deleteKeys()
+  export function deleteKeys(keytag: string): Promise<DeleteKeysResult> {
+    return new ReactNativeBiometrics().deleteKeys(keytag)
   }
 
   /**
@@ -114,6 +122,8 @@ export module ReactNativeBiometricsLegacy {
    * @param {Object} createSignatureOptions
    * @param {string} createSignatureOptions.promptMessage
    * @param {string} createSignatureOptions.payload
+   * @param {string} createSignatureOptions.keytag
+   * @param {string} createSignatureOptions.type
    * @returns {Promise<Object>}  Promise that resolves to an object cryptographic signature details
    */
   export function createSignature(createSignatureOptions: CreateSignatureOptions): Promise<CreateSignatureResult> {
@@ -161,10 +171,8 @@ export default class ReactNativeBiometrics {
      * an object with object.publicKey, which is the public key of the newly generated key pair
      * @returns {Promise<Object>}  Promise that resolves to object with details about the newly generated public key
      */
-    createKeys(): Promise<CreateKeysResult> {
-      return bridge.createKeys({
-        allowDeviceCredentials: this.allowDeviceCredentials
-      })
+    createKeys(CreateKeysOptions: CreateKeysOptions): Promise<CreateKeysResult> {
+      return bridge.createKeys(CreateKeysOptions)
     }
 
     /**
@@ -172,8 +180,8 @@ export default class ReactNativeBiometrics {
      * indicating if the keys were found to exist or not
      * @returns {Promise<Object>} Promise that resolves to object with details aobut the existence of keys
      */
-    biometricKeysExist(): Promise<BiometricKeysExistResult> {
-      return bridge.biometricKeysExist()
+    biometricKeysExist(keytag: string): Promise<BiometricKeysExistResult> {
+      return bridge.biometricKeysExist(keytag)
     }
 
     /**
@@ -181,8 +189,8 @@ export default class ReactNativeBiometrics {
      * indicating if the keys were properly deleted
      * @returns {Promise<Object>} Promise that resolves to an object with details about the deletion
      */
-    deleteKeys(): Promise<DeleteKeysResult> {
-      return bridge.deleteKeys()
+    deleteKeys(keytag: string): Promise<DeleteKeysResult> {
+      return bridge.deleteKeys(keytag)
     }
 
     /**
@@ -192,6 +200,8 @@ export default class ReactNativeBiometrics {
      * @param {Object} createSignatureOptions
      * @param {string} createSignatureOptions.promptMessage
      * @param {string} createSignatureOptions.payload
+     * @param {string} createSignatureOptions.keytag
+     * @param {string} createSignatureOptions.type
      * @returns {Promise<Object>}  Promise that resolves to an object cryptographic signature details
      */
     createSignature(createSignatureOptions: CreateSignatureOptions): Promise<CreateSignatureResult> {

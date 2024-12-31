@@ -11,6 +11,7 @@ var __assign = (this && this.__assign) || function () {
     return __assign.apply(this, arguments);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.ReactNativeBiometricsLegacy = exports.BiometryTypes = exports.Biometrics = exports.FaceID = exports.TouchID = void 0;
 var react_native_1 = require("react-native");
 var bridge = react_native_1.NativeModules.ReactNativeBiometrics;
 /**
@@ -45,8 +46,8 @@ var ReactNativeBiometricsLegacy;
      * an object with object.publicKey, which is the public key of the newly generated key pair
      * @returns {Promise<Object>}  Promise that resolves to object with details about the newly generated public key
      */
-    function createKeys() {
-        return new ReactNativeBiometrics().createKeys();
+    function createKeys(CreateKeysOptions) {
+        return new ReactNativeBiometrics().createKeys(CreateKeysOptions);
     }
     ReactNativeBiometricsLegacy.createKeys = createKeys;
     /**
@@ -54,8 +55,8 @@ var ReactNativeBiometricsLegacy;
      * indicating if the keys were found to exist or not
      * @returns {Promise<Object>} Promise that resolves to object with details aobut the existence of keys
      */
-    function biometricKeysExist() {
-        return new ReactNativeBiometrics().biometricKeysExist();
+    function biometricKeysExist(keytag) {
+        return new ReactNativeBiometrics().biometricKeysExist(keytag);
     }
     ReactNativeBiometricsLegacy.biometricKeysExist = biometricKeysExist;
     /**
@@ -63,8 +64,8 @@ var ReactNativeBiometricsLegacy;
      * indicating if the keys were properly deleted
      * @returns {Promise<Object>} Promise that resolves to an object with details about the deletion
      */
-    function deleteKeys() {
-        return new ReactNativeBiometrics().deleteKeys();
+    function deleteKeys(keytag) {
+        return new ReactNativeBiometrics().deleteKeys(keytag);
     }
     ReactNativeBiometricsLegacy.deleteKeys = deleteKeys;
     /**
@@ -74,6 +75,8 @@ var ReactNativeBiometricsLegacy;
      * @param {Object} createSignatureOptions
      * @param {string} createSignatureOptions.promptMessage
      * @param {string} createSignatureOptions.payload
+     * @param {string} createSignatureOptions.keytag
+     * @param {string} createSignatureOptions.type
      * @returns {Promise<Object>}  Promise that resolves to an object cryptographic signature details
      */
     function createSignature(createSignatureOptions) {
@@ -93,16 +96,16 @@ var ReactNativeBiometricsLegacy;
         return new ReactNativeBiometrics().simplePrompt(simplePromptOptions);
     }
     ReactNativeBiometricsLegacy.simplePrompt = simplePrompt;
-})(ReactNativeBiometricsLegacy = exports.ReactNativeBiometricsLegacy || (exports.ReactNativeBiometricsLegacy = {}));
+})(ReactNativeBiometricsLegacy || (exports.ReactNativeBiometricsLegacy = ReactNativeBiometricsLegacy = {}));
 var ReactNativeBiometrics = /** @class */ (function () {
     /**
      * @param {Object} rnBiometricsOptions
      * @param {boolean} rnBiometricsOptions.allowDeviceCredentials
      */
     function ReactNativeBiometrics(rnBiometricsOptions) {
-        var _a, _b;
+        var _a;
         this.allowDeviceCredentials = false;
-        var allowDeviceCredentials = (_b = (_a = rnBiometricsOptions) === null || _a === void 0 ? void 0 : _a.allowDeviceCredentials, (_b !== null && _b !== void 0 ? _b : false));
+        var allowDeviceCredentials = (_a = rnBiometricsOptions === null || rnBiometricsOptions === void 0 ? void 0 : rnBiometricsOptions.allowDeviceCredentials) !== null && _a !== void 0 ? _a : false;
         this.allowDeviceCredentials = allowDeviceCredentials;
     }
     /**
@@ -119,26 +122,24 @@ var ReactNativeBiometrics = /** @class */ (function () {
      * an object with object.publicKey, which is the public key of the newly generated key pair
      * @returns {Promise<Object>}  Promise that resolves to object with details about the newly generated public key
      */
-    ReactNativeBiometrics.prototype.createKeys = function () {
-        return bridge.createKeys({
-            allowDeviceCredentials: this.allowDeviceCredentials
-        });
+    ReactNativeBiometrics.prototype.createKeys = function (CreateKeysOptions) {
+        return bridge.createKeys(CreateKeysOptions);
     };
     /**
      * Returns promise that resolves to an object with object.keysExists = true | false
      * indicating if the keys were found to exist or not
      * @returns {Promise<Object>} Promise that resolves to object with details aobut the existence of keys
      */
-    ReactNativeBiometrics.prototype.biometricKeysExist = function () {
-        return bridge.biometricKeysExist();
+    ReactNativeBiometrics.prototype.biometricKeysExist = function (keytag) {
+        return bridge.biometricKeysExist(keytag);
     };
     /**
      * Returns promise that resolves to an object with true | false
      * indicating if the keys were properly deleted
      * @returns {Promise<Object>} Promise that resolves to an object with details about the deletion
      */
-    ReactNativeBiometrics.prototype.deleteKeys = function () {
-        return bridge.deleteKeys();
+    ReactNativeBiometrics.prototype.deleteKeys = function (keytag) {
+        return bridge.deleteKeys(keytag);
     };
     /**
      * Prompts user with biometrics dialog using the passed in prompt message and
@@ -147,11 +148,13 @@ var ReactNativeBiometrics = /** @class */ (function () {
      * @param {Object} createSignatureOptions
      * @param {string} createSignatureOptions.promptMessage
      * @param {string} createSignatureOptions.payload
+     * @param {string} createSignatureOptions.keytag
+     * @param {string} createSignatureOptions.type
      * @returns {Promise<Object>}  Promise that resolves to an object cryptographic signature details
      */
     ReactNativeBiometrics.prototype.createSignature = function (createSignatureOptions) {
         var _a;
-        createSignatureOptions.cancelButtonText = (_a = createSignatureOptions.cancelButtonText, (_a !== null && _a !== void 0 ? _a : 'Cancel'));
+        createSignatureOptions.cancelButtonText = (_a = createSignatureOptions.cancelButtonText) !== null && _a !== void 0 ? _a : 'Cancel';
         return bridge.createSignature(__assign({ allowDeviceCredentials: this.allowDeviceCredentials }, createSignatureOptions));
     };
     /**
@@ -165,8 +168,8 @@ var ReactNativeBiometrics = /** @class */ (function () {
      */
     ReactNativeBiometrics.prototype.simplePrompt = function (simplePromptOptions) {
         var _a, _b;
-        simplePromptOptions.cancelButtonText = (_a = simplePromptOptions.cancelButtonText, (_a !== null && _a !== void 0 ? _a : 'Cancel'));
-        simplePromptOptions.fallbackPromptMessage = (_b = simplePromptOptions.fallbackPromptMessage, (_b !== null && _b !== void 0 ? _b : 'Use Passcode'));
+        simplePromptOptions.cancelButtonText = (_a = simplePromptOptions.cancelButtonText) !== null && _a !== void 0 ? _a : 'Cancel';
+        simplePromptOptions.fallbackPromptMessage = (_b = simplePromptOptions.fallbackPromptMessage) !== null && _b !== void 0 ? _b : 'Use Passcode';
         return bridge.simplePrompt(__assign({ allowDeviceCredentials: this.allowDeviceCredentials }, simplePromptOptions));
     };
     return ReactNativeBiometrics;
